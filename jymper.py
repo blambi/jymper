@@ -7,7 +7,8 @@ class Renderer:
         self.display = pygame.display.set_mode(resolution)
 
     def render(self):
-        self.display.fill((0, 0, 0))
+        #self.display.fill((0, 0, 0))
+        self.display.blit(sprites.backdrop, (0, 0, 640, 480))
 
         self.world.active_blocks.draw(self.display)
         self.world.active_entities.draw(self.display)
@@ -22,6 +23,8 @@ class Sprites:
         self.textures = pygame.transform.scale(pygame.image.load("textures.png"),
                                                (64*self.scale, 64*self.scale))
         self.textures.set_colorkey((0, 0, 0, 255))
+        self.backdrop = pygame.transform.scale(pygame.image.load("backdrop.png"),
+                                               (160*self.scale, 120*self.scale))
 
         # slice it :D
         self.sprites = list()
