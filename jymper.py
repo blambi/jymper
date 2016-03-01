@@ -1,54 +1,6 @@
 #!/usr/bin/env python
 import pygame
 
-class Renderer:
-    def __init__(self, resolution, world):
-        self.display = pygame.display.set_mode(resolution)
-        self.resolution = resolution
-        self.sprite_size = 8
-        self.sprite_scale = 4
-        #self.sprites = pygame.image.load("textures.png")
-        self.sprites = pygame.transform.scale(pygame.image.load("textures.png"),
-                                              (64*self.sprite_scale, 64*self.sprite_scale))
-        self.sprites.set_colorkey((0, 0, 0, 255))
-        self.world = world
-
-    def draw_entity(self, entity):
-        sprite_size = self.sprite_size * self.sprite_scale
-        src_rect = (entity.current_sprite[0] * sprite_size,
-                    entity.current_sprite[1] * sprite_size,
-                    sprite_size,
-                    sprite_size
-        )
-
-        # calculate placement position (FIXME: Find a better one...)
-        ppos = ((entity.pos[0] + entity.mod_pos[0]) * sprite_size,
-                (entity.pos[1] + entity.mod_pos[1]) * sprite_size)
-
-        # place
-        self.display.blit(self.sprites, ppos, src_rect)
-
-    def render(self):
-        """Draws the gaming area to the screen surface"""
-        sprite_size = self.sprite_size * self.sprite_scale
-        for row in self.world.world:
-            for block in row:
-                src_rect = (block.current_sprite[0] * sprite_size,
-                            block.current_sprite[1] * sprite_size,
-                            sprite_size,
-                            sprite_size
-                )
-
-                # calculate placement position (FIXME: Find a better one...)
-                ppos = (block.pos[0] * sprite_size,
-                        block.pos[1] * sprite_size)
-
-                # place
-                self.display.blit(self.sprites, ppos, src_rect)
-
-        for entity in self.world.entities:
-            self.draw_entity(entity)
-
 class StupidRenderer:
     def __init__(self, resolution, world):
         self.world = world
@@ -170,6 +122,9 @@ class Player(Block):
         self.blocking = False
         self.change_x = 0
         self.change_y = 0
+        self.max_speed = 6
+        self.moving = "no" # no, left, right
+        self.jumping = False
 
     def jump(self):
         # move down a bit and see if there is a platform below us.
@@ -178,19 +133,22 @@ class Player(Block):
         self.rect.y += 2
         platform_hit_list = pygame.sprite.spritecollide(self, world.active_blocks, False)
         self.rect.y -= 2
- 
+
         # If it is ok to jump, set our speed upwards
         if len(platform_hit_list) > 0: # or self.rect.bottom >= SCREEN_HEIGHT:
             self.change_y = -10
 
     def move(self, direction):
-        if direction == 'left':
-            self.change_x -= 1
-        elif direction == 'right':
-            self.change_x += 1
+        if self.moving != direction:
+            self.change_x *= 0.25
+        self.moving = direction # 'left', right
 
-    def stop(self):
-        self.change_x = 0
+    def halt(self, kind):
+        """Stop adding speed to kind (move, jump)"""
+        if kind == 'move':
+            self.moving = 'no'
+        else:
+            self.jumping = False
 
     def update(self):
         """ Move the player. """
@@ -198,7 +156,17 @@ class Player(Block):
         self.calc_grav()
 
         # Move left/right
-        self.rect.x += self.change_x
+        if self.moving != 'no':
+            if self.moving == 'left':
+                self.change_x -= 0.25
+                if self.change_x < -self.max_speed:
+                    self.change_x = -self.max_speed
+            else:
+                self.change_x += 0.25
+                if self.change_x > self.max_speed:
+                    self.change_x = self.max_speed
+
+            self.rect.x += self.change_x
 
         # Are we colliding yet?!
         block_hit_list = pygame.sprite.spritecollide(self, world.active_blocks, False)
@@ -252,14 +220,29 @@ def shitty_main_loop(world, renderer):
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F3:
-                    print( "FPS: %f" % fps_clock.get_fps() )
+                    print("FPS: %f" % fps_clock.get_fps())
+                elif event.key == pygame.K_F5:
+                    print("Reseting player position")
+                    world.entities[0].rect.x = 0
+                    world.entities[0].rect.y = 0
+                    world.entities[0].change_x = 0
+                    world.entities[0].change_y = 0
 
-                if event.key == pygame.K_UP:
+                elif event.key == pygame.K_UP:
                     world.entities[0].jump()
                 elif event.key == pygame.K_LEFT:
                     world.entities[0].move("left")
                 elif event.key == pygame.K_RIGHT:
                     world.entities[0].move("right")
+
+            elif event.type == pygame.KEYUP:
+                # stop move actions
+                if event.key == pygame.K_UP:
+                    world.entities[0].halt('jump')
+                elif event.key == pygame.K_LEFT:
+                    world.entities[0].halt('move')
+                elif event.key == pygame.K_RIGHT:
+                    world.entities[0].halt('move')
 
         # Do world events
         world.tick()
