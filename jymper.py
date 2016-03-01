@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 import pygame
 
-class StupidRenderer:
+class Renderer:
     def __init__(self, resolution, world):
         self.world = world
         self.display = pygame.display.set_mode(resolution)
 
     def render(self):
         self.display.fill((0, 0, 0))
-        self.world.active_blocks.update()
-        self.world.active_entities.update()
 
         self.world.active_blocks.draw(self.display)
         self.world.active_entities.draw(self.display)
@@ -21,7 +19,6 @@ class Sprites:
     def __init__(self):
         self.size = 8
         self.scale = 4
-        #self.sprites = pygame.image.load("textures.png")
         self.textures = pygame.transform.scale(pygame.image.load("textures.png"),
                                                (64*self.scale, 64*self.scale))
         self.textures.set_colorkey((0, 0, 0, 255))
@@ -40,14 +37,6 @@ class Sprites:
                 self.sprites[-1].append(self.textures.subsurface(src_rect))
 
     def get(self, (x, y)):
-        #sprite_size = self.sprite_size * self.sprite_scale
-        #src_rect = (x * sprite_size,
-        #            y * sprite_size,
-        #            sprite_size,
-        #            sprite_size
-        #)
-        # TODO: move this into a precutter..
-        #return self.sprites.subsurface(src_rect)
         return self.sprites[y][x]
 
 class World:
@@ -158,11 +147,11 @@ class Player(Block):
         # Move left/right
         if self.moving != 'no':
             if self.moving == 'left':
-                self.change_x -= 0.25
+                self.change_x -= 0.5
                 if self.change_x < -self.max_speed:
                     self.change_x = -self.max_speed
             else:
-                self.change_x += 0.25
+                self.change_x += 0.5
                 if self.change_x > self.max_speed:
                     self.change_x = self.max_speed
 
@@ -204,7 +193,7 @@ class Player(Block):
         #    self.rect.y = SCREEN_HEIGHT - self.rect.height
 
 
-def shitty_main_loop(world, renderer):
+def main_loop(world, renderer):
     run = True
     fps_clock = pygame.time.Clock()
 
@@ -269,6 +258,5 @@ world = World(level)
 
 pygame.init()
 pygame.display.set_caption("jymper")
-#renderer = Renderer((640,480), world)
-renderer = StupidRenderer((640, 480), world)
-shitty_main_loop(world, renderer)
+renderer = Renderer((640, 480), world)
+main_loop(world, renderer)
