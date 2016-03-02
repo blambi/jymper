@@ -28,9 +28,9 @@ class Sprites:
 
         # slice it :D
         self.sprites = list()
-        for x in range(8):
-            for y in range(8):
-                self.sprites.append(list())
+        for y in range(8):
+            self.sprites.append(list())
+            for x in range(8):
                 sprite_size = self.size * self.scale
                 src_rect = (x * sprite_size,
                             y * sprite_size,
@@ -40,7 +40,10 @@ class Sprites:
                 self.sprites[-1].append(self.textures.subsurface(src_rect))
 
     def get(self, (x, y)):
-        return self.sprites[y][x]
+        try:
+            return self.sprites[y][x]
+        except IndexError, e:
+            raise ValueError("Couldn't find sprite {}, {} in {}".format(x, y, self.sprites))
 
 class World:
     def __init__(self, level_string):
@@ -117,6 +120,8 @@ class Player(Block):
         self.max_speed = 6
         self.moving = "no" # no, left, right
         self.jumping = False
+        self.walk_sprites = [(0, 0), (1, 0)]
+        self.jump_sprites = [(2, 0), (3, 0)]
 
     def jump(self):
         # move down a bit and see if there is a platform below us.
@@ -139,6 +144,7 @@ class Player(Block):
         """Stop adding speed to kind (move, jump)"""
         if kind == 'move':
             self.moving = 'no'
+            self.image = sprites.get(self.walk_sprites[0])
         else:
             self.jumping = False
 
@@ -182,6 +188,28 @@ class Player(Block):
 
             # Stop our vertical movement
             self.change_y = 0
+
+        # update our graphics
+        if int(self.change_x) == 0 and self.change_y == 0:
+            self.image = sprites.get(self.walk_sprites[0])
+        elif int(self.change_x) != 0 and self.change_y == 0:
+            t = pygame.time.get_ticks() % 1000
+            if t < 250:
+                self.image = sprites.get(self.walk_sprites[0])
+            elif t < 500:
+                self.image = sprites.get(self.walk_sprites[1])
+            elif t < 750:
+                self.image = sprites.get(self.jump_sprites[0])
+            else:
+                self.image = sprites.get(self.jump_sprites[1])
+
+        else:
+            if self.change_y > 0:
+                self.image = sprites.get(self.jump_sprites[1])
+            else:
+                self.image = sprites.get(self.jump_sprites[0])
+
+
 
     def calc_grav(self):
         """ Calculate effect of gravity. """
@@ -240,7 +268,7 @@ def main_loop(world, renderer):
         world.tick()
 
         # Limit FPS
-        fps_clock.tick(24)
+        fps_clock.tick(30)
 
 # test load
 sprites = Sprites()
