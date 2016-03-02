@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import random
 import pygame
 
 class Renderer:
@@ -11,6 +12,7 @@ class Renderer:
         self.display.blit(sprites.backdrop, (0, 0, 640, 480))
 
         self.world.active_blocks.draw(self.display)
+        self.world.hurtful_things.draw(self.display)
         self.world.active_entities.draw(self.display)
 
         pygame.display.update()
@@ -49,6 +51,7 @@ class Sprites:
 class World:
     def __init__(self, level_string):
         self.active_blocks = pygame.sprite.Group() # Blocks are blocking blocks... gah
+        self.hurtful_things = pygame.sprite.Group()
         self.active_entities = pygame.sprite.Group() # players later entites :D
         self.world = list() # list of lists
         self.entities = list()
@@ -66,6 +69,9 @@ class World:
                 elif char == '#':
                     self.world[-1].append(Block(x, y))
                     self.active_blocks.add(self.world[-1][-1])
+                elif char == 'F':
+                    self.world[-1].append(Fire(x, y))
+                    self.hurtful_things.add(self.world[-1][-1])
             if x > self.width:
                 print("new x {}".format(x))
                 self.width = x
@@ -96,7 +102,6 @@ class Block(pygame.sprite.Sprite):
     sprite = (0, 1)
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.kind = "block"
         self.blocking = True
         self.hurting = False
         self.image = sprites.get(self.sprite)
@@ -107,6 +112,26 @@ class Block(pygame.sprite.Sprite):
     def update(self):
         pass
 
+class Fire(Block):
+    def __init__(self, x, y):
+        self.sprites = [(0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6)]
+        self.sprite = random.choice(self.sprites)
+        Block.__init__(self, x, y)
+        self.hurting = True
+        self.blocking = False
+        self.sprite_pos = self.sprites.index(self.sprite)
+
+    def update(self):
+        t = pygame.time.get_ticks()
+
+        if t % 4 == 0:
+            #self.image = sprites.get(random.choice(self.sprites))
+            self.sprite_pos += 1
+            if self.sprite_pos >= len(self.sprites):
+                self.sprite_pos = 0
+            self.sprite = self.sprites[self.sprite_pos]
+            self.image = sprites.get(self.sprite)
+        # Spawn framgent 5% chance
 
 class Player(Block):
     # Later make new base called entity and handle them diffrently
@@ -115,7 +140,6 @@ class Player(Block):
     sprite = (0, 0)
     def __init__(self, x, y):
         Block.__init__(self, x, y)
-        kind = "player"
         self.blocking = False
         self.change_x = 0
         self.change_y = 0
@@ -231,12 +255,6 @@ class Player(Block):
         else:
             self.change_y += .35
 
-        # See if we are on the ground.
-        #if self.rect.y >= SCREEN_HEIGHT - self.rect.height and self.change_y >= 0:
-        #    self.change_y = 0
-        #    self.rect.y = SCREEN_HEIGHT - self.rect.height
-
-
 def main_loop(world, renderer):
     run = True
     fps_clock = pygame.time.Clock()
@@ -298,7 +316,7 @@ level = """
 # ##         ####  #
 # ##               #
 #  P  ###       # ##
-############ #######
+###########FFF######
 ####################"""
 world = World(level)
 
