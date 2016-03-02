@@ -97,7 +97,6 @@ class Block(pygame.sprite.Sprite):
         self.kind = "block"
         self.blocking = True
         self.hurting = False
-        #self.current_sprite = (0, 1)
         self.image = sprites.get(self.sprite)
         self.rect = self.image.get_rect()
         self.rect.x = x * (sprites.size * sprites.scale)
@@ -246,8 +245,8 @@ def main_loop(world, renderer):
                     print("FPS: %f" % fps_clock.get_fps())
                 elif event.key == pygame.K_F5:
                     print("Reseting player position")
-                    world.entities[0].rect.x = 0
-                    world.entities[0].rect.y = 0
+                    world.entities[0].rect.x = 64
+                    world.entities[0].rect.y = 384
                     world.entities[0].change_x = 0
                     world.entities[0].change_y = 0
 
@@ -276,18 +275,20 @@ def main_loop(world, renderer):
 # test load
 sprites = Sprites()
 level = """
-
-
-###           ###
-
-     ## ##
-##
-      ##
- ##         ####
- ##
- P   ###  #
-######## ###  #####"""
-
+####            ####
+##                ##
+#      ####        #
+#       ##         #
+####           ### #
+#                  #
+##    ## ##        #
+###                #
+#      ##          #
+# ##         ####  #
+# ##               #
+#  P  ###       # ##
+############ #######
+####################"""
 world = World(level)
 
 pygame.init()
