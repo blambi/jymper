@@ -119,6 +119,7 @@ class Player(Block):
         self.change_y = 0
         self.max_speed = 6
         self.moving = "no" # no, left, right
+        self.last_direction = "right"
         self.jumping = False
         self.walk_sprites = [(0, 0), (1, 0)]
         self.jump_sprites = [(2, 0), (3, 0)]
@@ -139,6 +140,7 @@ class Player(Block):
         if self.moving != direction:
             self.change_x *= 0.25
         self.moving = direction # 'left', right
+        self.last_direction = direction
 
     def halt(self, kind):
         """Stop adding speed to kind (move, jump)"""
@@ -190,25 +192,26 @@ class Player(Block):
             self.change_y = 0
 
         # update our graphics
-        if int(self.change_x) == 0 and self.change_y == 0:
+        if self.moving == 'no':
             self.image = sprites.get(self.walk_sprites[0])
-        elif int(self.change_x) != 0 and self.change_y == 0:
-            t = pygame.time.get_ticks() % 1000
+        elif self.moving in ('left', 'right') and self.change_y == 0:
+            t = pygame.time.get_ticks() % 750 #1000
             if t < 250:
                 self.image = sprites.get(self.walk_sprites[0])
             elif t < 500:
                 self.image = sprites.get(self.walk_sprites[1])
             elif t < 750:
                 self.image = sprites.get(self.jump_sprites[0])
-            else:
-                self.image = sprites.get(self.jump_sprites[1])
-
+            #else:
+            #    self.image = sprites.get(self.jump_sprites[1])
         else:
             if self.change_y > 0:
                 self.image = sprites.get(self.jump_sprites[1])
             else:
                 self.image = sprites.get(self.jump_sprites[0])
 
+        if self.last_direction == 'left':
+            self.image = pygame.transform.flip(self.image, True, False)
 
 
     def calc_grav(self):
