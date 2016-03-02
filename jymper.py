@@ -45,6 +45,7 @@ class Sprites:
         except IndexError, e:
             raise ValueError("Couldn't find sprite {}, {} in {}".format(x, y, self.sprites))
 
+
 class World:
     def __init__(self, level_string):
         self.active_blocks = pygame.sprite.Group() # Blocks are blocking blocks... gah
@@ -89,6 +90,7 @@ class World:
         for entity in self.entities:
             entity.update()
 
+
 class Block(pygame.sprite.Sprite):
     # Basic block
     sprite = (0, 1)
@@ -105,6 +107,7 @@ class Block(pygame.sprite.Sprite):
     def update(self):
         pass
 
+
 class Player(Block):
     # Later make new base called entity and handle them diffrently
     # for example these should "float", between grid points
@@ -117,6 +120,8 @@ class Player(Block):
         self.change_x = 0
         self.change_y = 0
         self.max_speed = 6
+        self.max_jump = 8
+        self.jump_amount = 0
         self.moving = "no" # no, left, right
         self.last_direction = "right"
         self.jumping = False
@@ -133,21 +138,24 @@ class Player(Block):
 
         # If it is ok to jump, set our speed upwards
         if len(platform_hit_list) > 0: # or self.rect.bottom >= SCREEN_HEIGHT:
-            self.change_y = -10
+            #self.change_y = -8 # 8 is a good standard
+            #self.jump_amount = 4
+            self.jumping = True
 
     def move(self, direction):
-        if self.moving != direction:
+        if self.moving != direction and not self.jumping:
             self.change_x *= 0.25
         self.moving = direction # 'left', right
         self.last_direction = direction
 
     def halt(self, kind):
         """Stop adding speed to kind (move, jump)"""
-        if kind == 'move':
+        if kind == 'move' and not self.jumping:
             self.moving = 'no'
             self.image = sprites.get(self.walk_sprites[0])
         else:
             self.jumping = False
+            self.jump_amount = 0
 
     def update(self):
         """ Move the player. """
@@ -176,6 +184,9 @@ class Player(Block):
                 self.rect.left = block.rect.right
 
         # Move up/down
+        if self.jumping and self.jump_amount <= self.max_jump:
+            self.jump_amount += 2
+            self.change_y -= 2
         self.rect.y += self.change_y
 
         # Are we colliding yet?!
