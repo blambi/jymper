@@ -88,6 +88,10 @@ class World:
 
         return self.world[y][x]
 
+    def remove_entity(self, thing):
+        self.entities.remove(thing)
+        thing.kill()
+
     def tick(self):
         for row in self.world:
             for block in row:
@@ -131,7 +135,13 @@ class Fire(Block):
                 self.sprite_pos = 0
             self.sprite = self.sprites[self.sprite_pos]
             self.image = sprites.get(self.sprite)
+
         # Spawn framgent 5% chance
+        if random.randint(0, 100) <= 1:
+            ember = Ember(self.rect.x + random.randint(0, 32), self.rect.y + 2)
+            world.entities.append(ember)
+            world.hurtful_things.add(ember)
+
 
 class Player(Block):
     # Later make new base called entity and handle them diffrently
@@ -255,6 +265,84 @@ class Player(Block):
         else:
             self.change_y += .35
 
+
+class Ember(pygame.sprite.Sprite):
+    # basic gravitational thing, also smaller then most, and not sprite based for now
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.surface.Surface((2, 2))
+        self.image.fill((0xe0, 0x77, 0x27))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.change_x = 0
+        self.change_y = 0
+        self.fall = False
+        self.move = True
+        self.change_x_target = random.randint(0, 10) - 5
+        self.change_y_target = -random.randint(2, 5)
+        self.life = random.randint(5, 10)
+
+    def update(self):
+        # Gravity
+        self.calc_grav()
+
+        # Calc down life time if no longer moving
+        if not self.move:
+            if self.life == 5:
+                self.image.fill((0xe0, 0x3c, 0x27))
+            elif self.life == 2:
+                self.image.fill((0x4b, 0x23, 0x1e))#(0x2f, 0x2f, 0x2f)) #(0xaf, 0x01, 0x0f))
+            elif self.life <= 0:
+                world.remove_entity(self)
+            self.life -= 1
+
+        # Move left/right
+        if self.move:
+            if self.change_x > self.change_x_target:
+                self.change_x -= 0.5
+            elif self.change_x < self.change_x_target:
+                self.change_x += 0.5
+            self.rect.x += self.change_x
+
+        # Are we colliding yet?!
+        block_hit_list = pygame.sprite.spritecollide(self, world.active_blocks, False)
+        for block in block_hit_list:
+            if self.change_x > 0:
+                self.rect.right = block.rect.left
+            elif self.change_x < 0:
+                self.rect.left = block.rect.right
+            self.move =  False
+
+        # Move up/down
+        if self.change_y >= self.change_y_target and not self.fall:
+            self.change_y -= 2
+        else:
+            self.fall = True
+        self.rect.y += self.change_y
+
+        # Are we colliding yet?!
+        block_hit_list = pygame.sprite.spritecollide(self, world.active_blocks, False)
+        for block in block_hit_list:
+            # Reset our position based on the top/bottom of the object.
+            if self.change_y > 0:
+                self.rect.bottom = block.rect.top
+                self.move =  False
+            elif self.change_y < 0:
+                self.rect.top = block.rect.bottom
+
+
+            # Stop our vertical movement
+            self.change_y = 0
+
+    def calc_grav(self):
+        """ Calculate effect of gravity. """
+        if self.change_y == 0:
+            self.change_y = 1
+        else:
+            self.change_y += .35
+
+
 def main_loop(world, renderer):
     run = True
     fps_clock = pygame.time.Clock()
@@ -303,9 +391,9 @@ def main_loop(world, renderer):
 
 # test load
 sprites = Sprites()
-level = """
-####            ####
-##                ##
+level = """#####          ######
+####         F  ####
+##           #    ##
 #      ####        #
 #       ##         #
 ####           ### #
