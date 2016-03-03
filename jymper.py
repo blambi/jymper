@@ -360,6 +360,8 @@ def main_loop(world, renderer):
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F3:
                     print("FPS: %f" % fps_clock.get_fps())
+                elif event.key == pygame.K_F11:
+                    pygame.display.toggle_fullscreen()
                 elif event.key == pygame.K_F5:
                     print("Reseting player position")
                     world.entities[0].rect.x = 64
