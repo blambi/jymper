@@ -124,6 +124,11 @@ class Fire(Block):
         self.hurting = True
         self.blocking = False
         self.sprite_pos = self.sprites.index(self.sprite)
+        self.ember_pool = [Ember(self) for x in range(5)]
+
+    def reset_ember(self, ember):
+        world.remove_entity(ember)
+        self.ember_pool.append(ember)
 
     def update(self):
         t = pygame.time.get_ticks()
@@ -137,8 +142,9 @@ class Fire(Block):
             self.image = sprites.get(self.sprite)
 
         # Spawn framgent 5% chance
-        if random.randint(0, 100) <= 1:
-            ember = Ember(self.rect.x + random.randint(0, 32), self.rect.y + 2)
+        if random.randint(0, 100) <= 1 and self.ember_pool:
+            ember = self.ember_pool.pop() #Ember(self.rect.x + random.randint(0, 32), self.rect.y + 2)
+            ember.spawn(self.rect.x + random.randint(0, 32), self.rect.y + 2)
             world.entities.append(ember)
             world.hurtful_things.add(ember)
 
@@ -268,11 +274,14 @@ class Player(Block):
 
 class Ember(pygame.sprite.Sprite):
     # basic gravitational thing, also smaller then most, and not sprite based for now
-    def __init__(self, x, y):
+    def __init__(self, owner=None):
         pygame.sprite.Sprite.__init__(self)
+        self.owner = owner
         self.image = pygame.surface.Surface((2, 2))
-        self.image.fill((0xe0, 0x77, 0x27))
         self.rect = self.image.get_rect()
+
+    def spawn(self, x, y):
+        self.image.fill((0xe0, 0x77, 0x27))
         self.rect.x = x
         self.rect.y = y
         self.change_x = 0
@@ -294,7 +303,8 @@ class Ember(pygame.sprite.Sprite):
             elif self.life == 2:
                 self.image.fill((0x4b, 0x23, 0x1e))#(0x2f, 0x2f, 0x2f)) #(0xaf, 0x01, 0x0f))
             elif self.life <= 0:
-                world.remove_entity(self)
+                if self.owner:
+                    self.owner.reset_ember(self)
             self.life -= 1
 
         # Move left/right
