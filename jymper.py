@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import random
+import os
 import pygame
 
 class Renderer:
@@ -46,6 +47,17 @@ class Sprites:
             return self.sprites[y][x]
         except IndexError, e:
             raise ValueError("Couldn't find sprite {}, {} in {}".format(x, y, self.sprites))
+
+
+class Sounds:
+    def __init__(self):
+        # load them
+        self.sounds = dict()
+        for sound in ('hit1', 'hit2', 'jump1', 'jump2'):
+            self.sounds[sound] = pygame.mixer.Sound(os.path.join('sounds', sound + '.ogg'))
+
+    def play(self, sound_name):
+        self.sounds[sound_name].play() # TODO: make this pretty :)
 
 
 class World:
@@ -181,6 +193,7 @@ class Player(Block):
             #self.change_y = -8 # 8 is a good standard
             #self.jump_amount = 4
             self.jumping = True
+            sounds.play('jump2')
 
     def move(self, direction):
         if self.moving != direction and not self.jumping:
@@ -239,6 +252,8 @@ class Player(Block):
                 self.rect.top = block.rect.bottom
 
             # Stop our vertical movement
+            if abs(self.change_y) > 6:
+                sounds.play('hit2')
             self.change_y = 0
 
         # update our graphics
@@ -422,5 +437,6 @@ world = World(level)
 
 pygame.init()
 pygame.display.set_caption("jymper")
+sounds = Sounds()
 renderer = Renderer((640, 480), world)
 main_loop(world, renderer)
