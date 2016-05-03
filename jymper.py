@@ -379,7 +379,7 @@ def main_loop(world, renderer):
                     world.entities[0].change_x = 0
                     world.entities[0].change_y = 0
 
-                elif event.key == pygame.K_UP:
+                elif event.key in (pygame.K_UP, pygame.K_SPACE):
                     world.entities[0].jump()
                 elif event.key == pygame.K_LEFT:
                     world.entities[0].move("left")
@@ -388,7 +388,7 @@ def main_loop(world, renderer):
 
             elif event.type == pygame.KEYUP:
                 # stop move actions
-                if event.key == pygame.K_UP:
+                if event.key in (pygame.K_UP, pygame.K_SPACE):
                     world.entities[0].halt('jump')
                 elif event.key == pygame.K_LEFT:
                     world.entities[0].halt('move')
@@ -403,7 +403,7 @@ def main_loop(world, renderer):
 
 # test load
 sprites = Sprites()
-level = """#####          ######
+level = """#####         ######
 ####         F  ####
 ##           #    ##
 #      ####        #
