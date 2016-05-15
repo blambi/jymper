@@ -3,21 +3,53 @@ import random
 import os
 import pygame
 
-class Renderer:
+class Camera:
+    # Replace renderer with something more useful
     def __init__(self, resolution, world):
-        self.world = world
         self.display = pygame.display.set_mode(resolution)
+        self.world = world
+        self.level_width = world.width * (sprites.size * sprites.scale)
+        self.level_height = world.width * (sprites.size * sprites.scale)
+        self.rect = pygame.Rect(0, 0, resolution[0], resolution[1])
+        self.render_rect = pygame.Rect(-31, -31, resolution[0] + 31, resolution[1] + 31)
+        self.resolution = resolution
+        self.half_resolution = (resolution[0] / 2, resolution[1] / 2)
+
+    def center_on(self, entity):
+        # hardcoding 16
+        sprite_size = sprites.size * sprites.scale
+
+        # Be really stupid now and show a lot of background..
+        new_x = entity.rect.left - 16 - self.half_resolution[0]
+        new_y = entity.rect.top - 16 - self.half_resolution[1]
+        self.rect.left = new_x
+        self.rect.top = new_y
+
+        self.render_rect.left = new_x - 32
+        self.render_rect.top = new_y - 32
+        self.render_rect.right = self.rect.right + 31
+        self.render_rect.bottom = self.rect.bottom + 31
 
     def render(self):
-        #self.display.fill((0, 0, 0))
+        # Hack to center on player
+        self.center_on(world.entities[0])
+
         self.display.blit(sprites.backdrop, (0, 0, 640, 480))
 
-        self.world.active_blocks.draw(self.display)
-        self.world.hurtful_things.draw(self.display)
-        self.world.active_entities.draw(self.display)
+        # TODO: Calc offset (for relative rendering)
+        offset_x = self.rect.left
+        offset_y = self.rect.top
+
+        print("Rect: {}".format(self.rect))
+        print("Rendr: {}".format(self.render_rect))
+
+        all_things = self.world.active_blocks.sprites() + self.world.hurtful_things.sprites() +\
+                     self.world.active_entities.sprites()
+        for thing in all_things: #self.world.entities:
+            if self.render_rect.contains(thing.rect):
+                self.display.blit(thing.image, (thing.rect.x - offset_x, thing.rect.y - offset_y))
 
         pygame.display.update()
-
 
 class Sprites:
     def __init__(self):
@@ -418,25 +450,26 @@ def main_loop(world, renderer):
 
 # test load
 sprites = Sprites()
-level = """#####         ######
-####         F  ####
-##           #    ##
-#      ####        #
-#       ##         #
-####           ### #
-#                  #
-##    ## ##        #
-###                #
-#      ##          #
-# ##         ####  #
-# ##               #
-#  P  ###       # ##
+level = """#####            #####          ######
+####         F  #####             ####
+##           #    ##                ##
+#      ####        #   ###           #
+#       ##         #           ##    #
+####           ### ###               #
+#                  ##     ####       #
+##    ## ##                       ####
+###                                  #
+#      ##     P    ###########       #
+# ##         ####  ###     ###       #
+# ##               ##       ##FFFFFFF#
+#     ###       # ##         #########
 ###########FFF######
 ####################"""
+
 world = World(level)
 
 pygame.init()
 pygame.display.set_caption("jymper")
 sounds = Sounds()
-renderer = Renderer((640, 480), world)
+renderer = Camera((640, 480), world) #Renderer((640, 480), world)
 main_loop(world, renderer)
