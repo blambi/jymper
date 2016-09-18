@@ -25,10 +25,12 @@ class Camera:
         self.rect.left = new_x
         self.rect.top = new_y
 
+        #self.render_rect = pygame.Rect(new_x - 32, new_y - 32, self.rect.right + 32, self.rect.bottom + 32)
         self.render_rect.left = new_x - 32
         self.render_rect.top = new_y - 32
         self.render_rect.right = self.rect.right + 31
         self.render_rect.bottom = self.rect.bottom + 31
+        #print self.render_rect
 
     def render(self):
         # Hack to center on player
@@ -36,12 +38,11 @@ class Camera:
 
         self.display.blit(sprites.backdrop, (0, 0, 640, 480))
 
-        # TODO: Calc offset (for relative rendering)
         offset_x = self.rect.left
         offset_y = self.rect.top
 
-        print("Rect: {}".format(self.rect))
-        print("Rendr: {}".format(self.render_rect))
+        #print("Rect: {}".format(self.rect))
+        #print("Rendr: {}".format(self.render_rect))
 
         all_things = self.world.active_blocks.sprites() + self.world.hurtful_things.sprites() +\
                      self.world.active_entities.sprites()
@@ -228,8 +229,6 @@ class Player(Block):
             sounds.play('jump2')
 
     def move(self, direction):
-        if self.moving != direction and not self.jumping:
-            self.change_x *= 0.25
         self.moving = direction # 'left', right
         self.last_direction = direction
 
@@ -257,7 +256,14 @@ class Player(Block):
                 self.change_x += 0.5
                 if self.change_x > self.max_speed:
                     self.change_x = self.max_speed
+        else:
+            # Decrease speed if released
+            if self.change_x < 0.0: # Left
+                self.change_x += 0.25
+            elif self.change_x > 0.0: # right
+                self.change_x -= 0.25
 
+        if self.change_x != 0.0:
             self.rect.x += self.change_x
 
         # Are we colliding yet?!
