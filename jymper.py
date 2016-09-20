@@ -448,6 +448,26 @@ def main_loop(world, renderer):
                 elif event.key == pygame.K_RIGHT:
                     world.entities[0].halt('move')
 
+            # TODO: move some of this to configuration...
+            # use .joy to decide what controller is used for who
+            elif event.type == pygame.JOYAXISMOTION:
+                dead_zone = 0.25
+                if event.axis == 0:
+                    # Horizontally
+                    if abs(event.value) > dead_zone:
+                        if event.value > 0: # right
+                            world.entities[0].move("right")
+                        else:
+                            world.entities[0].move("left")
+                    else:
+                        world.entities[0].halt("move")
+
+            elif event.type == pygame.JOYBUTTONDOWN:
+                world.entities[0].jump() # Maybe check button... but there is only one thing
+
+            elif event.type == pygame.JOYBUTTONUP:
+                world.entities[0].halt('jump')
+
         # Do world events
         world.tick()
 
@@ -475,6 +495,14 @@ level = """#####            #####          ######
 world = World(level)
 
 pygame.init()
+
+# Init joypads
+pygame.joystick.init()
+joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+print("Found {} joysticks".format(len(joysticks)))
+print("Using {} {} for player one".format(joysticks[0].get_name(), joysticks[0].get_id()))
+joysticks[0].init()
+
 pygame.display.set_caption("jymper")
 sounds = Sounds()
 renderer = Camera((640, 480), world) #Renderer((640, 480), world)
