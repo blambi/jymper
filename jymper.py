@@ -109,8 +109,9 @@ class World:
                 self.world.append(list())
                 x += 1
                 if char == 'P':
-                    self.entities.append(Player(x, y))
-                    self.active_entities.add(self.entities[-1])
+                    for i in range(players): # hack...
+                        self.entities.append(Player(x, y, i))
+                        self.active_entities.add(self.entities[-1])
                 elif char == '#':
                     self.world[-1].append(Block(x, y))
                     self.active_blocks.add(self.world[-1][-1])
@@ -197,9 +198,8 @@ class Fire(Block):
 class Player(Block):
     # Later make new base called entity and handle them diffrently
     # for example these should "float", between grid points
-    # def __init__(self, x, y)
     sprite = (0, 0)
-    def __init__(self, x, y):
+    def __init__(self, x, y, player_id):
         Block.__init__(self, x, y)
         self.blocking = False
         self.change_x = 0
@@ -210,8 +210,17 @@ class Player(Block):
         self.moving = "no" # no, left, right
         self.last_direction = "right"
         self.jumping = False
-        self.walk_sprites = [(0, 0), (1, 0)]
-        self.jump_sprites = [(2, 0), (3, 0)]
+
+        # TODO: Add tinting..
+        if player_id == 0:
+            self.walk_sprites = [(0, 0), (1, 0)]
+            self.jump_sprites = [(2, 0), (3, 0)]
+        elif player_id == 1:
+            self.walk_sprites = [(4, 0), (5, 0)]
+            self.jump_sprites = [(6, 0), (7, 0)]
+        else:
+            self.walk_sprites = [(4, 1), (5, 1)]
+            self.jump_sprites = [(6, 1), (7, 1)]
 
     def jump(self):
         # move down a bit and see if there is a platform below us.
@@ -222,9 +231,9 @@ class Player(Block):
         self.rect.y -= 2
 
         # If it is ok to jump, set our speed upwards
-        if len(platform_hit_list) > 0: # or self.rect.bottom >= SCREEN_HEIGHT:
-            #self.change_y = -8 # 8 is a good standard
-            #self.jump_amount = 4
+        if len(platform_hit_list) > 0:
+            self.change_y = -2 # Some inital jump seems to make gamepads easier to play with.
+            self.jump_amount = 2
             self.jumping = True
             sounds.play('jump2')
 
@@ -433,40 +442,43 @@ def main_loop(world, renderer):
                     world.entities[0].change_y = 0
 
                 elif event.key in (pygame.K_UP, pygame.K_SPACE):
-                    world.entities[0].jump()
+                    world.entities[2].jump()
                 elif event.key == pygame.K_LEFT:
-                    world.entities[0].move("left")
+                    world.entities[2].move("left")
                 elif event.key == pygame.K_RIGHT:
-                    world.entities[0].move("right")
+                    world.entities[2].move("right")
 
             elif event.type == pygame.KEYUP:
                 # stop move actions
                 if event.key in (pygame.K_UP, pygame.K_SPACE):
-                    world.entities[0].halt('jump')
+                    world.entities[2].halt('jump')
                 elif event.key == pygame.K_LEFT:
-                    world.entities[0].halt('move')
+                    world.entities[2].halt('move')
                 elif event.key == pygame.K_RIGHT:
-                    world.entities[0].halt('move')
+                    world.entities[2].halt('move')
 
             # TODO: move some of this to configuration...
             # use .joy to decide what controller is used for who
-            elif event.type == pygame.JOYAXISMOTION:
-                dead_zone = 0.25
-                if event.axis == 0:
-                    # Horizontally
-                    if abs(event.value) > dead_zone:
-                        if event.value > 0: # right
-                            world.entities[0].move("right")
+            if event.type in (pygame.JOYAXISMOTION, pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP):
+                player_pawn = world.entities[event.joy] # HACK
+
+                if event.type == pygame.JOYAXISMOTION:
+                    dead_zone = 0.25
+                    if event.axis == 0:
+                        # Horizontally
+                        if abs(event.value) > dead_zone:
+                            if event.value > 0: # right
+                                player_pawn.move("right")
+                            else:
+                                player_pawn.move("left")
                         else:
-                            world.entities[0].move("left")
-                    else:
-                        world.entities[0].halt("move")
+                            player_pawn.halt("move")
 
-            elif event.type == pygame.JOYBUTTONDOWN:
-                world.entities[0].jump() # Maybe check button... but there is only one thing
+                elif event.type == pygame.JOYBUTTONDOWN:
+                    player_pawn.jump() # Maybe check button... but there is only one thing
 
-            elif event.type == pygame.JOYBUTTONUP:
-                world.entities[0].halt('jump')
+                elif event.type == pygame.JOYBUTTONUP:
+                    player_pawn.halt('jump')
 
         # Do world events
         world.tick()
@@ -492,17 +504,19 @@ level = """#####            #####          ######
 ###########FFF######
 ####################"""
 
-world = World(level)
-
-pygame.init()
-
 # Init joypads
 pygame.joystick.init()
 joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 print("Found {} joysticks".format(len(joysticks)))
-print("Using {} {} for player one".format(joysticks[0].get_name(), joysticks[0].get_id()))
-joysticks[0].init()
+players = 1
+for joy in joysticks:
+    players += 1
+    print("Using {} {} for player {}".format(joy.get_name(), joy.get_id(), players))
+    joy.init()
 
+world = World(level)
+
+pygame.init()
 pygame.display.set_caption("jymper")
 sounds = Sounds()
 renderer = Camera((640, 480), world) #Renderer((640, 480), world)
