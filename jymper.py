@@ -441,25 +441,25 @@ def main_loop(world, renderer):
                     world.entities[0].change_y = 0
 
                 elif event.key in (pygame.K_UP, pygame.K_SPACE):
-                    world.entities[2].jump()
+                    world.entities[0].jump()
                 elif event.key == pygame.K_LEFT:
-                    world.entities[2].move("left")
+                    world.entities[0].move("left")
                 elif event.key == pygame.K_RIGHT:
-                    world.entities[2].move("right")
+                    world.entities[0].move("right")
 
             elif event.type == pygame.KEYUP:
                 # stop move actions
                 if event.key in (pygame.K_UP, pygame.K_SPACE):
-                    world.entities[2].halt('jump')
+                    world.entities[0].halt('jump')
                 elif event.key == pygame.K_LEFT:
-                    world.entities[2].halt('move')
+                    world.entities[0].halt('move')
                 elif event.key == pygame.K_RIGHT:
-                    world.entities[2].halt('move')
+                    world.entities[0].halt('move')
 
             # TODO: move some of this to configuration...
             # use .joy to decide what controller is used for who
             if event.type in (pygame.JOYAXISMOTION, pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP):
-                player_pawn = world.entities[event.joy] # HACK
+                player_pawn = world.entities[event.joy +1] # HACK
 
                 if event.type == pygame.JOYAXISMOTION:
                     dead_zone = 0.25
