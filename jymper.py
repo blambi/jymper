@@ -47,9 +47,8 @@ class Camera:
         all_things = self.world.active_blocks.sprites() + self.world.hurtful_things.sprites() +\
                      self.world.active_entities.sprites()
         for thing in all_things: #self.world.entities:
-            if self.render_rect.contains(thing.rect):
+            if self.render_rect.colliderect(thing.rect):
                 self.display.blit(thing.image, (thing.rect.x - offset_x, thing.rect.y - offset_y))
-
         pygame.display.update()
 
 class Sprites:
